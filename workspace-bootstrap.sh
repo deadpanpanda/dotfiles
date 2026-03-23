@@ -10,7 +10,8 @@ echo ""
 
 # Update apt
 echo "[1/10] Updating apt..."
-sudo apt update && sudo apt upgrade -y
+sudo apt update || true
+sudo apt upgrade -y || true
 
 # Install software-properties-common first (needed for add-apt-repository)
 echo "[2/10] Installing prerequisites..."
