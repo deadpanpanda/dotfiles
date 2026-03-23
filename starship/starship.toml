@@ -4,3 +4,12 @@ format = '$time$all'
 disabled = false
 format = '[$time]($style) '
 time_format = '%H:%M:%S'
+
+[hostname]
+disabled = true
+
+[username]
+
+[container]
+disabled = true
+
