@@ -9,14 +9,30 @@ echo ""
 # ============================================================
 
 # Update apt
-echo "[1/9] Updating apt..."
+echo "[1/10] Updating apt..."
 sudo apt update && sudo apt upgrade -y
 
-# Install core tools
-echo "[2/9] Installing core tools..."
+# Install software-properties-common first (needed for add-apt-repository)
+echo "[2/10] Installing prerequisites..."
+sudo apt install -y software-properties-common python3-pip
+
+# ============================================================
+# NEOVIM — Install latest via PPA BEFORE installing from default apt
+# Default apt gives 0.9.5 which is too old for LazyVim (needs 0.10+)
+# The unstable PPA provides 0.12.0-dev which works perfectly
+# ============================================================
+echo "[3/10] Installing Neovim via PPA (latest version)..."
+sudo add-apt-repository ppa:neovim-ppa/unstable -y
+sudo apt update
+sudo apt install -y neovim
+
+NVIM_VERSION=$(nvim --version | head -n 1)
+echo "  Installed: $NVIM_VERSION"
+
+# Install core tools (neovim excluded — already installed from PPA above)
+echo "[4/10] Installing core tools..."
 sudo apt install -y \
     fish \
-    neovim \
     git \
     ripgrep \
     fd-find \
@@ -24,19 +40,10 @@ sudo apt install -y \
     btop \
     zoxide \
     fzf \
-    tldr \
-    python3-pip \
-    software-properties-common
-
-# Try to get newer Neovim (needs 0.10+ for LazyVim)
-echo "[3/9] Attempting newer Neovim via PPA..."
-sudo add-apt-repository ppa:neovim-ppa/unstable -y 2>/dev/null && \
-    sudo apt update && \
-    sudo apt install -y neovim || \
-    echo "  PPA failed — using apt version. Check 'nvim --version' (needs 0.10+ for LazyVim)"
+    tldr
 
 # Install lazygit (not in apt, must use GitHub binary)
-echo "[4/9] Installing lazygit..."
+echo "[5/10] Installing lazygit..."
 LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*') && \
     curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" && \
     tar xf lazygit.tar.gz lazygit && \
@@ -45,17 +52,17 @@ LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/re
     echo "  Lazygit install failed (GitHub may be blocked from workspace)"
 
 # Install starship prompt
-echo "[5/9] Installing starship..."
+echo "[6/10] Installing starship..."
 curl -sS https://starship.rs/install.sh | sh -s -- -y
 
 # Install harlequin (terminal SQL IDE)
-echo "[6/9] Installing harlequin..."
+echo "[7/10] Installing harlequin..."
 pip install 'harlequin[postgres]' --break-system-packages 2>/dev/null || \
     python3 -m pip install 'harlequin[postgres]' --break-system-packages 2>/dev/null || \
     echo "  Harlequin install failed"
 
 # Set up LazyVim
-echo "[7/9] Setting up LazyVim..."
+echo "[8/10] Setting up LazyVim..."
 if [ -d ~/.config/nvim ]; then
     mv ~/.config/nvim ~/.config/nvim.bak.$(date +%s) 2>/dev/null || true
 fi
@@ -63,9 +70,9 @@ git clone https://github.com/LazyVim/starter ~/.config/nvim 2>/dev/null || true
 rm -rf ~/.config/nvim/.git
 
 # ============================================================
-# CONFIGURE FISH
+# CONFIGURE FISH, STARSHIP, LAZYGIT
 # ============================================================
-echo "[8/9] Configuring fish, starship, and lazygit..."
+echo "[9/10] Configuring fish, starship, and lazygit..."
 
 mkdir -p ~/.config/fish
 
@@ -102,8 +109,9 @@ FISHEOF
 mkdir -p ~/.config
 
 # Use dotfiles starship config if it exists, otherwise create one
-if [ -f "$(dirname "$0")/starship/starship.toml" ]; then
-    cp "$(dirname "$0")/starship/starship.toml" ~/.config/starship.toml
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/starship/starship.toml" ]; then
+    cp "$SCRIPT_DIR/starship/starship.toml" ~/.config/starship.toml
 else
     cat > ~/.config/starship.toml << 'STAREOF'
 format = '$time$all'
@@ -143,6 +151,9 @@ gui:
   showIcons: true
   nerdFontsVersion: "3"
   mouseEvents: false
+git:
+  autoFetch: false
+  autoRefresh: false
 LGEOF
 
 # ============================================================
@@ -157,7 +168,7 @@ LGEOF
 # personal identity (GitHub email) that will be used for work commits.
 # ============================================================
 
-echo "[9/9] Configuring git (aliases and editor only)..."
+echo "[10/10] Configuring git (aliases and editor only)..."
 
 # Editor
 git config --global core.editor "nvim"
@@ -208,6 +219,8 @@ chsh -s "$(which fish)" 2>/dev/null || echo "Could not change default shell"
 # ============================================================
 echo ""
 echo "=== Bootstrap complete! ==="
+echo ""
+echo "Neovim version: $NVIM_VERSION"
 echo ""
 echo "Manual steps:"
 echo "  1. Run 'fish' to switch to fish shell"
