@@ -1,21 +1,25 @@
 #!/bin/bash
-set -e
 echo "=== GitLab Workspace Bootstrap ==="
 echo ""
 
 # ============================================================
 # IMPORTANT: Run this script in BASH, not fish.
 # Run from: cd ~/dotfiles && bash workspace-bootstrap.sh
+#
+# NOTE: We intentionally do NOT use 'set -e' here.
+# The workspace has a broken Atlassian apt repo that causes
+# 'apt update' to return non-zero. With 'set -e' this kills
+# the entire script. Instead, each step handles its own errors.
 # ============================================================
 
-# Update apt
+# Update apt (|| true because workspace Atlassian repo has GPG errors)
 echo "[1/10] Updating apt..."
 sudo apt update || true
 sudo apt upgrade -y || true
 
 # Install software-properties-common first (needed for add-apt-repository)
 echo "[2/10] Installing prerequisites..."
-sudo apt install -y software-properties-common python3-pip
+sudo apt install -y software-properties-common python3-pip || true
 
 # ============================================================
 # NEOVIM — Install latest via PPA BEFORE installing from default apt
@@ -23,11 +27,11 @@ sudo apt install -y software-properties-common python3-pip
 # The unstable PPA provides 0.12.0-dev which works perfectly
 # ============================================================
 echo "[3/10] Installing Neovim via PPA (latest version)..."
-sudo add-apt-repository ppa:neovim-ppa/unstable -y
-sudo apt update
-sudo apt install -y neovim
+sudo add-apt-repository ppa:neovim-ppa/unstable -y || true
+sudo apt update || true
+sudo apt install -y neovim || true
 
-NVIM_VERSION=$(nvim --version | head -n 1)
+NVIM_VERSION=$(nvim --version 2>/dev/null | head -n 1 || echo "not installed")
 echo "  Installed: $NVIM_VERSION"
 
 # Install core tools (neovim excluded — already installed from PPA above)
@@ -41,20 +45,28 @@ sudo apt install -y \
     btop \
     zoxide \
     fzf \
-    tldr
+    tldr || true
 
 # Install lazygit (not in apt, must use GitHub binary)
 echo "[5/10] Installing lazygit..."
-LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*') && \
+cd /tmp
+rm -rf lazygit lazygit.tar.gz
+LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
+if [ -n "$LAZYGIT_VERSION" ]; then
     curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" && \
-    tar xf lazygit.tar.gz lazygit && \
-    sudo install lazygit -D -t /usr/local/bin/ && \
-    rm -f lazygit.tar.gz lazygit || \
-    echo "  Lazygit install failed (GitHub may be blocked from workspace)"
+        tar xf lazygit.tar.gz lazygit && \
+        sudo install lazygit -D -t /usr/local/bin/ && \
+        rm -f lazygit.tar.gz lazygit && \
+        echo "  Lazygit installed: $(lazygit --version 2>/dev/null | head -c 50)" || \
+        echo "  Lazygit install failed"
+else
+    echo "  Lazygit install failed (could not reach GitHub API)"
+fi
+cd - > /dev/null
 
 # Install starship prompt
 echo "[6/10] Installing starship..."
-curl -sS https://starship.rs/install.sh | sh -s -- -y
+curl -sS https://starship.rs/install.sh | sh -s -- -y || echo "  Starship install failed"
 
 # Install harlequin (terminal SQL IDE)
 echo "[7/10] Installing harlequin..."
@@ -216,12 +228,19 @@ git config --global merge.conflictstyle diff3
 chsh -s "$(which fish)" 2>/dev/null || echo "Could not change default shell"
 
 # ============================================================
-# DONE
+# VERIFY INSTALLATIONS
 # ============================================================
 echo ""
 echo "=== Bootstrap complete! ==="
 echo ""
-echo "Neovim version: $NVIM_VERSION"
+echo "Installed versions:"
+echo "  fish:     $(fish --version 2>/dev/null || echo 'NOT INSTALLED')"
+echo "  nvim:     $(nvim --version 2>/dev/null | head -n 1 || echo 'NOT INSTALLED')"
+echo "  starship: $(starship --version 2>/dev/null || echo 'NOT INSTALLED')"
+echo "  lazygit:  $(lazygit --version 2>/dev/null | head -c 50 || echo 'NOT INSTALLED')"
+echo "  eza:      $(eza --version 2>/dev/null | head -n 1 || echo 'NOT INSTALLED')"
+echo "  zoxide:   $(zoxide --version 2>/dev/null || echo 'NOT INSTALLED')"
+echo "  harlequin:$(harlequin --version 2>/dev/null | head -n 1 || echo 'NOT INSTALLED')"
 echo ""
 echo "Manual steps:"
 echo "  1. Run 'fish' to switch to fish shell"
