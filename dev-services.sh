@@ -41,6 +41,7 @@ fi
 
 # Create session with app + api
 tmux new-session -d -s "$SESSION" -c "$PROJECT_DIR"
+tmux rename-window -t "$SESSION" "services"
 tmux split-window -h -t "$SESSION" -c "$PROJECT_DIR"
 
 tmux send-keys -t "$SESSION:1.1" "fish -c opt_app" C-m
