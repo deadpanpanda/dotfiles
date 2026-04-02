@@ -37,15 +37,15 @@ echo "  Installed: $NVIM_VERSION"
 # Install core tools (neovim excluded — already installed from PPA above)
 echo "[4/10] Installing core tools..."
 sudo apt install -y \
-    fish \
-    git \
-    ripgrep \
-    fd-find \
-    eza \
-    btop \
-    zoxide \
-    fzf \
-    tldr || true
+  fish \
+  git \
+  ripgrep \
+  fd-find \
+  eza \
+  btop \
+  zoxide \
+  fzf \
+  tldr || true
 
 # Install lazygit (not in apt, must use GitHub binary)
 echo "[5/10] Installing lazygit..."
@@ -53,16 +53,16 @@ cd /tmp
 rm -rf lazygit lazygit.tar.gz
 LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
 if [ -n "$LAZYGIT_VERSION" ]; then
-    curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" && \
-        tar xf lazygit.tar.gz lazygit && \
-        sudo install lazygit -D -t /usr/local/bin/ && \
-        rm -f lazygit.tar.gz lazygit && \
-        echo "  Lazygit installed: $(lazygit --version 2>/dev/null | head -c 50)" || \
-        echo "  Lazygit install failed"
+  curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" &&
+    tar xf lazygit.tar.gz lazygit &&
+    sudo install lazygit -D -t /usr/local/bin/ &&
+    rm -f lazygit.tar.gz lazygit &&
+    echo "  Lazygit installed: $(lazygit --version 2>/dev/null | head -c 50)" ||
+    echo "  Lazygit install failed"
 else
-    echo "  Lazygit install failed (could not reach GitHub API)"
+  echo "  Lazygit install failed (could not reach GitHub API)"
 fi
-cd - > /dev/null
+cd - >/dev/null
 
 # Install starship prompt
 echo "[6/10] Installing starship..."
@@ -70,14 +70,14 @@ curl -sS https://starship.rs/install.sh | sh -s -- -y || echo "  Starship instal
 
 # Install harlequin (terminal SQL IDE)
 echo "[7/10] Installing harlequin..."
-pip install 'harlequin[postgres]' --break-system-packages 2>/dev/null || \
-    python3 -m pip install 'harlequin[postgres]' --break-system-packages 2>/dev/null || \
-    echo "  Harlequin install failed"
+pip install 'harlequin[postgres]' --break-system-packages 2>/dev/null ||
+  python3 -m pip install 'harlequin[postgres]' --break-system-packages 2>/dev/null ||
+  echo "  Harlequin install failed"
 
 # Set up LazyVim
 echo "[8/10] Setting up LazyVim..."
 if [ -d ~/.config/nvim ]; then
-    mv ~/.config/nvim ~/.config/nvim.bak.$(date +%s) 2>/dev/null || true
+  mv ~/.config/nvim ~/.config/nvim.bak.$(date +%s) 2>/dev/null || true
 fi
 git clone https://github.com/LazyVim/starter ~/.config/nvim 2>/dev/null || true
 rm -rf ~/.config/nvim/.git
@@ -93,7 +93,7 @@ mkdir -p ~/.config/fish
 # The workspace injects critical variables (GL_TOKEN_FILE_PATH,
 # GIT_CONFIG_COUNT, GIT_CONFIG_KEY_*, GIT_CONFIG_VALUE_*) into bash.
 # Fish doesn't inherit these, so we import them on startup.
-cat > ~/.config/fish/config.fish << 'FISHEOF'
+cat >~/.config/fish/config.fish <<'FISHEOF'
 if status is-interactive
     # Import workspace environment variables from bash
     # Without this, git credentials and workspace tools break in fish
@@ -124,9 +124,9 @@ mkdir -p ~/.config
 # Use dotfiles starship config if it exists, otherwise create one
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$SCRIPT_DIR/starship/starship.toml" ]; then
-    cp "$SCRIPT_DIR/starship/starship.toml" ~/.config/starship.toml
+  cp "$SCRIPT_DIR/starship/starship.toml" ~/.config/starship.toml
 else
-    cat > ~/.config/starship.toml << 'STAREOF'
+  cat >~/.config/starship.toml <<'STAREOF'
 format = '$time$all'
 
 [time]
@@ -157,16 +157,13 @@ fi
 # Disables mouseEvents (causes escape code leak over SSH)
 # ============================================================
 mkdir -p ~/.config/lazygit
-cat > ~/.config/lazygit/config.yml << 'LGEOF'
+cat >~/.config/lazygit/config.yml <<'LGEOF'
 os:
   editPreset: 'nvim'
 gui:
   showIcons: true
   nerdFontsVersion: "3"
   mouseEvents: false
-git:
-  autoFetch: false
-  autoRefresh: false
 LGEOF
 
 # ============================================================
@@ -244,18 +241,9 @@ echo "  harlequin:$(harlequin --version 2>/dev/null | head -n 1 || echo 'NOT INS
 echo ""
 echo "Manual steps:"
 echo "  1. Run 'fish' to switch to fish shell"
-echo "  2. Set timezone:  set -Ux TZ Australia/Sydney"
-echo "  3. Set ls alias:  alias ls 'eza --icons --group-directories-first' && funcsave ls"
-echo "  4. Add PATH:      fish_add_path ~/.local/bin"
-echo "  5. Launch nvim to install LazyVim plugins (press q when done)"
 echo ""
 echo "For GitHub dotfiles repo (optional):"
 echo "  cd ~/dotfiles"
 echo "  git config --local credential.helper store"
 echo "  git config --local user.name 'deadpanpanda'"
 echo "  git config --local user.email '139224044+deadpanpanda@users.noreply.github.com'"
-echo ""
-echo "Verify git identity in work project:"
-echo "  cd /projects/optizmo"
-echo "  git config user.name   # should show workspace identity"
-echo "  git config user.email  # should show work email"
