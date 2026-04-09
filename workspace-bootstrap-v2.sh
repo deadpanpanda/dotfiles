@@ -248,9 +248,6 @@ gui:
   showIcons: true
   nerdFontsVersion: "3"
   mouseEvents: false
-git:
-  autoFetch: false
-  autoRefresh: false
 LGEOF
   echo "  Lazygit config written"
 else

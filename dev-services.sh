@@ -3,13 +3,23 @@
 # dev-services.sh — Launch workspace services in tmux
 #
 # Usage:
-#   services      — starts app + api (2 panes)
-#   services full — starts all 4 services
-#   services add  — adds workers to existing session
+#   services           — starts app + api (2 panes)
+#   services full      — starts all 4 services
+#   services add       — adds workers to existing session
+#   services opt2      — starts app + api using optizmo_2
+#   services opt2 full — starts all 4 services using optizmo_2
+#   services opt2 add  — adds workers using optizmo_2
 # ============================================================
 
 SESSION="services"
 PROJECT_DIR="/projects/optizmo"
+
+# Check if first arg selects the alternate directory
+if [ "$1" = "opt2" ]; then
+  PROJECT_DIR="/projects/optizmo_2"
+  shift
+fi
+
 ACTION="${1:-default}"
 
 # Attach if already running and no special action
