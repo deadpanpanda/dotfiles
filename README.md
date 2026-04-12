@@ -1,6 +1,6 @@
 # Terminal Development Environment Setup Cheatsheet
 
-> **Stack:** WezTerm → WSL2 (Ubuntu) → Fish Shell → Starship Prompt → Neovim (LazyVim) → GitKraken CLI + Lazygit + Harlequin + Jira CLI/TUI
+> **Stack:** WezTerm → WSL2 (Ubuntu) → Fish Shell → Starship Prompt → Neovim (LazyVim) → Lazygit + Harlequin + Jira CLI/TUI
 
 ---
 
@@ -146,7 +146,7 @@ Download from [wezfurlong.org/wezterm](https://wezfurlong.org/wezterm/).
 
 Download **FiraCode Nerd Font** from [nerdfonts.com/font-downloads](https://www.nerdfonts.com/font-downloads). Extract zip, select all `.ttf` files, right click → **Install for all users**.
 
-Nerd Fonts include special icons used by eza, LazyVim's file explorer, starship, and GitKraken CLI.
+Nerd Fonts include special icons used by eza, LazyVim's file explorer, starship, and lazygit.
 
 ### Configure WezTerm
 
@@ -269,7 +269,7 @@ Note: The above uses **fish syntax**. In bash the variable assignment would use 
 
 Verify: `lazygit --version`
 
-### Configure lazygit for Neovim
+### Configure lazygit
 
 ```bash
 mkdir -p ~/.config/lazygit
@@ -281,16 +281,11 @@ Add:
 ```yaml
 os:
   editPreset: 'nvim'
+gui:
+  showIcons: true
+  nerdFontsVersion: "3"
+  mouseEvents: false
 ```
-
-### Lazygit vs GitKraken CLI
-
-They complement each other:
-
-| Tool | Use for |
-|------|---------|
-| **Lazygit** | Day-to-day git: staging, committing, rebasing, conflicts, viewing diffs |
-| **GitKraken CLI** | MR creation, multi-repo workspaces, issue tracking, GitLab integration |
 
 LazyVim has built-in lazygit integration: press `Space g g` inside Neovim.
 
@@ -309,50 +304,7 @@ LazyVim has built-in lazygit integration: press `Space g g` inside Neovim.
 
 ---
 
-## 10. Install GitKraken CLI
-
-Install binary directly (avoids snap permission issues with port binding and browser opening):
-
-```bash
-curl -sL https://github.com/gitkraken/gk-cli/releases/latest/download/gk_linux_amd64 -o ~/gk
-chmod +x ~/gk
-sudo mv ~/gk /usr/local/bin/gk
-```
-
-### Authenticate & configure
-
-```bash
-gk auth login
-gk organization list
-gk organization set YOUR_ORG_NAME
-gk provider list --sync
-```
-
-### Add GitLab Self-Hosted
-
-Create a **Personal Access Token** in GitLab with scopes: **api** and **read_user** (Settings > Access Tokens). Leave expiration blank if allowed. Then:
-
-```bash
-gk provider add gitlab-self-hosted
-```
-
-If the browser doesn't open automatically, copy the URL from the terminal output and paste it into your browser manually.
-
-### Useful gk commands
-
-| Command | Action |
-|---------|--------|
-| `gk graph` | Visual commit graph |
-| `gk issue list` | View issues |
-| `gk work start` | Start a work item |
-| `gk provider list --sync` | Check connected providers |
-| `gk help` | Full command list |
-
-Note: GitKraken CLI handles MR creation and workflow management. For reviewing MR comments and inline feedback, you'll still use GitLab's web UI or GitKraken Desktop (GUI app).
-
----
-
-## 11. Install Harlequin (Terminal SQL IDE)
+## 10. Install Harlequin (Terminal SQL IDE)
 
 ```bash
 pip install harlequin --break-system-packages
@@ -380,7 +332,7 @@ harlequin  # opens in-memory DuckDB session
 
 ---
 
-## 12. Install Jira Tools
+## 11. Install Jira Tools
 
 ### jira-cli (quick actions & interactive mode)
 
@@ -423,7 +375,7 @@ Launch: `jiratui ui`
 
 ---
 
-## 13. Install Terminal Utilities
+## 12. Install Terminal Utilities
 
 ### eza (modern ls replacement)
 
@@ -466,7 +418,7 @@ sudo apt install tldr -y
 
 ---
 
-## 14. Git Configuration
+## 13. Git Configuration
 
 ```bash
 git config --global user.name "Your Name"
@@ -490,7 +442,7 @@ Note: Your Windows git config at `C:\Program Files\Git\etc\gitconfig` is NOT sha
 
 ---
 
-## 15. SSH Setup
+## 14. SSH Setup
 
 ### Copy Windows SSH keys into WSL
 
@@ -547,14 +499,23 @@ chmod 600 ~/.ssh/your_key_file
 
 ---
 
-## 16. Dotfiles Repo
+## 15. Dotfiles Repo
 
 ### Structure
 
 ```
 ~/dotfiles/
 ├── fish/
-│   └── config.fish
+│   ├── config.fish
+│   └── functions/
+│       ├── lg.fish
+│       ├── ls.fish
+│       ├── lsa.fish
+│       ├── opt_api.fish
+│       ├── opt_app.fish
+│       ├── opt_orch_w.fish
+│       ├── opt_w.fish
+│       └── services.fish
 ├── starship/
 │   └── starship.toml
 ├── nvim/
@@ -568,7 +529,15 @@ chmod 600 ~/.ssh/your_key_file
 │       │   ├── lazy.lua
 │       │   └── options.lua
 │       └── plugins/
-│           └── example.lua
+│           ├── colors.lua
+│           ├── colorscheme.lua
+│           ├── dadbod.lua
+│           ├── gitsigns.lua
+│           ├── mini-files.lua
+│           ├── mini-surround.lua
+│           └── telescope-fzf.lua
+├── tmux/
+│   └── tmux.conf
 ├── wezterm/
 │   └── .wezterm.lua
 ├── git/
@@ -583,14 +552,16 @@ chmod 600 ~/.ssh/your_key_file
 
 ```bash
 mkdir -p ~/dotfiles && cd ~/dotfiles && git init
-mkdir -p fish starship nvim wezterm git lazygit
+mkdir -p fish/functions starship nvim wezterm git lazygit tmux
 
 cp ~/.config/fish/config.fish fish/
+cp ~/.config/fish/functions/*.fish fish/functions/
 cp ~/.config/starship.toml starship/
 cp -r ~/.config/nvim/* nvim/
 cp ~/win/.wezterm.lua wezterm/
 cp ~/.gitconfig git/
 cp ~/.config/lazygit/config.yml lazygit/ 2>/dev/null
+cp ~/.config/tmux/tmux.conf tmux/ 2>/dev/null
 ```
 
 ### .gitignore
@@ -607,8 +578,11 @@ DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 echo "Installing dotfiles from $DOTFILES"
 
 # Fish
-mkdir -p ~/.config/fish
+mkdir -p ~/.config/fish/functions
 ln -sf "$DOTFILES/fish/config.fish" ~/.config/fish/config.fish
+for f in "$DOTFILES"/fish/functions/*.fish; do
+  ln -sf "$f" ~/.config/fish/functions/
+done
 
 # Starship
 mkdir -p ~/.config
@@ -621,6 +595,10 @@ ln -sfn "$DOTFILES/nvim" ~/.config/nvim
 # Lazygit
 mkdir -p ~/.config/lazygit
 ln -sf "$DOTFILES/lazygit/config.yml" ~/.config/lazygit/config.yml 2>/dev/null
+
+# Tmux
+mkdir -p ~/.config/tmux
+ln -sf "$DOTFILES/tmux/tmux.conf" ~/.config/tmux/tmux.conf
 
 # Git
 ln -sf "$DOTFILES/git/.gitconfig" ~/.gitconfig
@@ -651,7 +629,6 @@ echo "  - wslu: sudo apt install wslu -y (WSL only)"
 echo "  - harlequin: pip install 'harlequin[postgres,mysql]' --break-system-packages"
 echo "  - jira-cli: install from github.com/ankitpokhrel/jira-cli"
 echo "  - jiratui: pip install jiratui --break-system-packages"
-echo "  - gk: curl -sL https://github.com/gitkraken/gk-cli/releases/latest/download/gk_linux_amd64 -o ~/gk && chmod +x ~/gk && sudo mv ~/gk /usr/local/bin/gk"
 echo ""
 echo "After installing, add ~/.local/bin to PATH: fish_add_path ~/.local/bin"
 ```
@@ -688,7 +665,6 @@ WezTerm (window, fonts, colors, tabs, splits)
             └── Starship (prompt — the info line showing git/dir/time)
                  └── Neovim + LazyVim (code editor with IDE features)
                  └── Lazygit (interactive git TUI — staging, commits, rebasing)
-                 └── GitKraken CLI (MR creation, workspaces, GitLab integration)
                  └── Harlequin (terminal SQL IDE for databases)
                  └── jira-cli / JiraTUI (Jira ticket management)
                  └── btop (system resource monitor)
@@ -706,7 +682,6 @@ WezTerm (window, fonts, colors, tabs, splits)
 | **Starship** | Prompt (git info, timestamps, directory, language versions) |
 | **Neovim + LazyVim** | Code editor with IDE features via plugins |
 | **Lazygit** | Day-to-day git (stage, commit, rebase, conflicts, diffs) |
-| **GitKraken CLI** | MR creation, multi-repo workspaces, GitLab/Jira integration |
 | **Harlequin** | Database client (SQL IDE in terminal) |
 | **jira-cli** | Quick Jira actions (move tickets, assign, comment) |
 | **JiraTUI** | Visual Jira board in terminal |
@@ -729,5 +704,4 @@ WezTerm (window, fonts, colors, tabs, splits)
 | `pip` installed tools not found | `fish_add_path ~/.local/bin` |
 | Fish syntax errors with bash commands | Fish uses `set` not `=`, `()` not `$()` |
 | `lazygit` not in apt | Install from GitHub releases, not `apt` |
-| `gk` snap permission errors | Install binary directly instead of via snap |
 | Git branch `master` vs `main` | Use `git branch -M main` to rename before pushing to GitHub |
