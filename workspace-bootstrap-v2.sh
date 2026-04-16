@@ -362,6 +362,40 @@ fish -c '
     fish_add_path ~/.local/bin
 ' 2>/dev/null || echo "  Fish alias setup skipped (fish may not be installed yet)"
 
+# --- Claude Code config ---
+echo "[12] Claude Code statusline..."
+CLAUDE_DIR="$HOME/.claude"
+mkdir -p "$CLAUDE_DIR"
+
+if [ ! -f "$CLAUDE_DIR/statusline-command.sh" ]; then
+  cp "$SCRIPT_DIR/claude/statusline-command.sh" "$CLAUDE_DIR/statusline-command.sh"
+  chmod +x "$CLAUDE_DIR/statusline-command.sh"
+  echo "  Statusline script copied"
+else
+  echo "  ✓ Statusline script already exists (persistent)"
+fi
+
+if [ -f "$CLAUDE_DIR/settings.json" ]; then
+  if ! grep -q '"statusLine"' "$CLAUDE_DIR/settings.json"; then
+    python3 -c "
+import json
+with open('$CLAUDE_DIR/settings.json') as f:
+    s = json.load(f)
+with open('$SCRIPT_DIR/claude/settings.json') as f:
+    sl = json.load(f)
+s.update(sl)
+with open('$CLAUDE_DIR/settings.json', 'w') as f:
+    json.dump(s, f, indent=2)
+    f.write('\n')
+" && echo "  statusLine merged into settings.json" || echo "  Failed to update settings.json"
+  else
+    echo "  ✓ statusLine already in settings.json"
+  fi
+else
+  cp "$SCRIPT_DIR/claude/settings.json" "$CLAUDE_DIR/settings.json"
+  echo "  settings.json copied"
+fi
+
 # ============================================================
 # CLEANUP
 # ============================================================
