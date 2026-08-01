@@ -92,7 +92,8 @@
 [init]
     defaultBranch = main
 [user]
-	name = Bluey
-	email = adam.ragg@optizmo.com
-[credential]
-	helper = /.workspace-data/variables/file/gl_git_credential_store.sh
+	name = Bluedog
+	email = 139224044+deadpanpanda@users.noreply.github.com
+[credential "https://github.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential

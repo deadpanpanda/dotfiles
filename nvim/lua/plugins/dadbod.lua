@@ -1,21 +1,13 @@
 return {
   {
-    "tpope/vim-dadbod",
-    lazy = true,
-  },
-  {
     "kristijanhusak/vim-dadbod-ui",
-    dependencies = {
-      "tpope/vim-dadbod",
-      { "kristijanhusak/vim-dadbod-completion", ft = { "sql" } },
-    },
-    cmd = { "DBUI", "DBUIToggle", "DBUIAddConnection", "DBUIFindBuffer" },
+    -- LazyVim's lang.sql extra binds <leader>D. Prefer <leader>db.
+    -- The extra's init already sets db_ui_use_nerd_fonts and
+    -- db_ui_show_database_icon, along with save locations and
+    -- db_ui_execute_on_save = false, so it is left untouched here.
     keys = {
-      { "<leader>db", "<cmd>DBUIToggle<cr>", desc = "Toggle DB UI" },
+      { "<leader>D", false },
+      { "<leader>db", "<cmd>DBUIToggle<CR>", desc = "Toggle DB UI" },
     },
-    init = function()
-      vim.g.db_ui_use_nerd_fonts = 1
-      vim.g.db_ui_show_database_icon = 1
-    end,
   },
 }

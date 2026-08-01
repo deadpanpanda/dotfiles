@@ -1,0 +1,49 @@
+# Global ignore list for ripgrep and fd.
+#
+# Needed because several of your projects are not git repositories, so the
+# usual .gitignore filtering does not apply there. The dotfiles repo rooted at
+# / has the same effect: its .gitignore is two lines, so nothing under $HOME
+# gets filtered by git either.
+#
+# Machine-generated content only. Nothing here is something you would search.
+
+# Version control internals
+.git/
+
+# Python
+.venv/
+.venv*/
+venv/
+__pycache__/
+*.pyc
+
+# Node / JS
+node_modules/
+.npm/
+*.min.js
+*.map
+
+# .NET / Java
+.nuget/
+.m2/
+.gradle/
+.dotnet/
+obj/
+bin/
+
+# Tool and package caches
+.cache/
+.bmad/cache/
+
+# Named individually rather than excluding all of .local/share, which would
+# also hide ~/.local/share/nvim/lazy - the plugin source you may want to read.
+.local/share/pipx/
+.local/share/pnpm/
+.local/share/roslyn-language-server/
+
+.vscode/extensions/
+.vscode-server/
+
+# Windows
+AppData/
+$Recycle.Bin/

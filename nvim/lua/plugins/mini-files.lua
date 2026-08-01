@@ -27,9 +27,17 @@ return {
 
     -- Toggle mini.files at current file
     vim.keymap.set("n", "<leader>fm", function()
-      if not MiniFiles.close() then
-        MiniFiles.open(vim.api.nvim_buf_get_name(0))
+      if MiniFiles.close() then
+        return
       end
+      -- Buffer names are not always real paths (neo-tree, scratch buffers,
+      -- unsaved files), so walk up to the nearest directory that exists.
+      local path = vim.api.nvim_buf_get_name(0)
+      while path ~= "" and not vim.uv.fs_stat(path) do
+        local parent = vim.fs.dirname(path)
+        path = (parent == path or parent == "." or parent == "/") and "" or parent
+      end
+      MiniFiles.open(path ~= "" and path or vim.uv.cwd())
     end, { desc = "Toggle mini.files" })
 
     -- Dotfile toggle

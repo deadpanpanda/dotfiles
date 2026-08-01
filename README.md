@@ -469,18 +469,12 @@ Host github.com
     User yourgithubusername
     IdentityFile ~/.ssh/id_rsa_gh
     IdentitiesOnly yes
-
-Host my-workspace
-    HostName your.gitlab.server.com
-    User your-username
-    IdentityFile ~/.ssh/id_ed25519
 ```
 
 ### Test connections
 
 ```bash
 ssh -T git@github.com
-ssh my-workspace
 ```
 
 ### Troubleshooting
@@ -504,18 +498,40 @@ chmod 600 ~/.ssh/your_key_file
 ### Structure
 
 ```
-~/dotfiles/
+dotfiles/
 ├── fish/
 │   ├── config.fish
+│   ├── conf.d/                 # auto-loaded at shell start
+│   │   ├── editor.fish         # EDITOR / VISUAL = nvim
+│   │   ├── fzf.fish            # fzf key bindings, walker options, previews
+│   │   ├── gh_config_dir_per_dir.fish
+│   │   └── ripgrep.fish        # RIPGREP_CONFIG_PATH
 │   └── functions/
+│       ├── fd.fish             # alias for Debian's fdfind
+│       ├── fdf.fish            # find by name across Windows + WSL, then cd
+│       ├── gk.fish
 │       ├── lg.fish
 │       ├── ls.fish
 │       ├── lsa.fish
-│       ├── opt_api.fish
-│       ├── opt_app.fish
-│       ├── opt_orch_w.fish
-│       ├── opt_w.fish
-│       └── services.fish
+│       ├── prm.fish
+│       ├── prmi.fish
+│       ├── rgf.fish            # live ripgrep search, open at the match
+│       └── winhome.fish
+├── fzf/                        # helper scripts used by fdf and rgf
+│   ├── es-search.sh            # Everything index + WSL walk
+│   ├── open-tmux.sh            # open a file in a new tmux window
+│   ├── preview-dir.sh
+│   ├── preview-file.sh
+│   ├── preview-path.sh
+│   └── preview.sh
+├── ripgrep/
+│   ├── config                  # points at the ignore file
+│   └── ignore                  # shared by rg and fd
+├── tmux/
+│   ├── tmux.conf               # -> ~/.config/tmux/tmux.conf
+│   └── dot-tmux.conf           # -> ~/.tmux.conf
+├── wezterm/
+│   └── .wezterm.lua
 ├── starship/
 │   └── starship.toml
 ├── nvim/
@@ -544,8 +560,7 @@ chmod 600 ~/.ssh/your_key_file
 │   └── .gitconfig
 ├── lazygit/
 │   └── config.yml
-├── .gitignore
-└── install.sh
+└── .gitignore
 ```
 
 ### Create from scratch
@@ -570,89 +585,37 @@ cp ~/.config/tmux/tmux.conf tmux/ 2>/dev/null
 nvim/lazy-lock.json
 ```
 
-### install.sh
+### Packages to install manually
+
+These are not config, so the repo cannot carry them.
 
 ```bash
-#!/bin/bash
-DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-echo "Installing dotfiles from $DOTFILES"
+sudo apt install fish eza btop zoxide fzf tldr ripgrep fd-find -y
+sudo apt install wslu -y            # WSL only
+chsh -s $(which fish)
 
-# Fish
-mkdir -p ~/.config/fish/functions
-ln -sf "$DOTFILES/fish/config.fish" ~/.config/fish/config.fish
-for f in "$DOTFILES"/fish/functions/*.fish; do
-  ln -sf "$f" ~/.config/fish/functions/
-done
+curl -sS https://starship.rs/install.sh | sh
+sudo snap install nvim --classic
+# lazygit: install from GitHub releases
 
-# Starship
-mkdir -p ~/.config
-ln -sf "$DOTFILES/starship/starship.toml" ~/.config/starship.toml
+# Python tools via pipx, so a system Python upgrade cannot break them
+sudo apt install pipx -y
+pipx install 'harlequin[postgres]'
+pipx install sqlfluff
 
-# Neovim
-rm -rf ~/.config/nvim
-ln -sfn "$DOTFILES/nvim" ~/.config/nvim
-
-# Lazygit
-mkdir -p ~/.config/lazygit
-ln -sf "$DOTFILES/lazygit/config.yml" ~/.config/lazygit/config.yml 2>/dev/null
-
-# Tmux
-mkdir -p ~/.config/tmux
-ln -sf "$DOTFILES/tmux/tmux.conf" ~/.config/tmux/tmux.conf
-
-# Git
-ln -sf "$DOTFILES/git/.gitconfig" ~/.gitconfig
-
-# WezTerm (only link if on WSL)
-if grep -qi microsoft /proc/version 2>/dev/null; then
-  WIN_HOME=$(wslpath "$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')")
-  if [ -n "$WIN_HOME" ]; then
-    ln -sf "$DOTFILES/wezterm/.wezterm.lua" "$WIN_HOME/.wezterm.lua"
-    echo "WezTerm config linked to $WIN_HOME"
-  fi
-fi
-
-echo ""
-echo "Dotfiles linked!"
-echo ""
-echo "Still need to install manually:"
-echo "  - fish: sudo apt install fish -y && chsh -s \$(which fish)"
-echo "  - starship: curl -sS https://starship.rs/install.sh | sh"
-echo "  - neovim: sudo snap install nvim --classic"
-echo "  - lazygit: see cheatsheet (install from GitHub releases)"
-echo "  - eza: sudo apt install eza -y"
-echo "  - btop: sudo apt install btop -y"
-echo "  - zoxide: sudo apt install zoxide -y"
-echo "  - fzf: sudo apt install fzf -y"
-echo "  - tldr: sudo apt install tldr -y"
-echo "  - wslu: sudo apt install wslu -y (WSL only)"
-echo "  - harlequin: pip install 'harlequin[postgres,mysql]' --break-system-packages"
-echo "  - jira-cli: install from github.com/ankitpokhrel/jira-cli"
-echo "  - jiratui: pip install jiratui --break-system-packages"
-echo ""
-echo "After installing, add ~/.local/bin to PATH: fish_add_path ~/.local/bin"
+fish_add_path ~/.local/bin
 ```
 
-### Push to GitHub
+A newer fzf than Debian ships is worth having (`--wrap`, the built-in walker,
+and `fzf --fish` integration). Download the release binary into `~/.local/bin`.
 
-```bash
-chmod +x install.sh
-git add .
-git commit -m "dotfiles: fish, starship, nvim, wezterm, git, lazygit configs"
-git branch -M main
-git remote add origin git@github.com:yourusername/dotfiles.git
-git push -u origin main
-```
+On Windows, install Everything (voidtools) and put its CLI at `C:\Tools\es.exe`.
+That is what makes `fdf` search all drives instantly.
 
 ### On any new machine
 
-```bash
-git clone git@github.com:yourusername/dotfiles.git ~/dotfiles
-cd ~/dotfiles
-./install.sh
-```
-
-Symlinks mean editing configs in their normal locations (e.g. `~/.config/fish/config.fish`) edits the dotfiles repo. Just `cd ~/dotfiles`, commit, and push.
+Link the configs into place, or copy them. The paths each file belongs at are
+listed in the structure above, and in the Terminal Stack Quick Reference note.
 
 ---
 

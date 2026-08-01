@@ -1,0 +1,3 @@
+# ripgrep config, loaded via $RIPGREP_CONFIG_PATH.
+# One argument per line. No shell expansion, so paths must be absolute.
+--ignore-file=/home/adamr/.config/ripgrep/ignore

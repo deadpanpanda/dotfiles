@@ -1,19 +1,13 @@
 if status is-interactive
-    # Import workspace environment variables from bash
-    # Without this, git credentials and workspace tools break in fish
-    for line in (bash -c 'source /etc/profile 2>/dev/null; source ~/.bashrc 2>/dev/null; env')
-        set -l parts (string split -m 1 '=' -- $line)
-        if test (count $parts) -eq 2
-            switch $parts[1]
-                case PWD SHLVL _ SHELL USER LOGNAME HOME TERM
-                    # Skip read-only and shell-managed variables
-                    continue
-                case '*'
-                    set -gx $parts[1] $parts[2]
-            end
-        end
-    end
-
+    # Commands to run in interactive sessions can go here
     starship init fish | source
-    zoxide init fish | source
+    direnv hook fish | source
 end
+zoxide init fish | source
+if not set -q SSH_AGENT_PID
+    eval (ssh-agent -c)
+end
+ssh-add ~/.ssh/id_ed25519 2>/dev/null
+
+set -gx DOTNET_ROOT $HOME/.dotnet
+fish_add_path $HOME/.dotnet
