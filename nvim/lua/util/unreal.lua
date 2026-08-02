@@ -142,6 +142,23 @@ local function errorformat(include_warnings)
   return efm .. [[,%-G%.%#]]
 end
 
+--- Build.bat and the .uproject both live under paths containing spaces
+--- ("Program Files", "Unreal Projects"). Invoking them through `cmd.exe /c`
+--- is a quoting minefield: cmd strips outer quotes after /c and then splits
+--- the batch path on its space, which hangs waiting on a bogus prompt rather
+--- than failing cleanly. PowerShell's call operator takes each argument as a
+--- discrete string, so it survives the spaces.
+---@param exe string
+---@param args string[]
+---@return string[] argv
+local function powershell(exe, args)
+  local parts = { ('& "%s"'):format(exe) }
+  for _, a in ipairs(args) do
+    parts[#parts + 1] = ('"%s"'):format(a)
+  end
+  return { "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", table.concat(parts, " ") }
+end
+
 local function run(cmd, cwd, title, opts, cb)
   opts = opts or {}
   vim.system(cmd, { cwd = cwd, text = true }, function(res)
@@ -192,24 +209,27 @@ function M.build(opts)
   local config = opts.configuration or "Development"
   vim.notify(("Building %s %s Win64…"):format(ctx.target, config), vim.log.levels.INFO)
 
-  run({
-    "cmd.exe",
-    "/c",
-    ctx.build_bat,
-    ctx.target,
-    "Win64",
-    config,
-    "-project=" .. ctx.uproject,
-    "-game",
-    "-engine",
-    "-progress",
-  }, ctx.dir, "Unreal build " .. ctx.target, opts, function(ok, count)
-    if ok and count == 0 then
-      vim.notify("Build succeeded, 0 errors", vim.log.levels.INFO)
-    elseif count == 0 then
-      vim.notify("Build failed with no file-anchored errors, run Build.bat in a terminal", vim.log.levels.ERROR)
+  run(
+    powershell(ctx.build_bat, {
+      ctx.target,
+      "Win64",
+      config,
+      "-project=" .. ctx.uproject,
+      "-game",
+      "-engine",
+      "-progress",
+    }),
+    ctx.dir,
+    "Unreal build " .. ctx.target,
+    opts,
+    function(ok, count)
+      if ok and count == 0 then
+        vim.notify("Build succeeded, 0 errors", vim.log.levels.INFO)
+      elseif count == 0 then
+        vim.notify("Build failed with no file-anchored errors, run Build.bat in a terminal", vim.log.levels.ERROR)
+      end
     end
-  end)
+  )
 end
 
 --- Regenerate compile_commands.json via UnrealBuildTool, then restart clangd.
@@ -225,48 +245,63 @@ function M.compile_commands()
 
   vim.notify("Generating compile_commands.json (this takes a minute)…", vim.log.levels.INFO)
 
-  run({
-    "cmd.exe",
-    "/c",
-    ctx.build_bat,
-    "-mode=GenerateClangDatabase",
-    "-project=" .. ctx.uproject,
-    "-game",
-    "-engine",
-    ctx.target,
-    "Win64",
-    "Development",
-  }, ctx.dir, "Unreal compile database", { warnings = false }, function(ok, _, out)
-    if not ok then
-      vim.notify("GenerateClangDatabase failed, see :copen or run it in a terminal", vim.log.levels.ERROR)
-      return
-    end
+  run(
+    powershell(ctx.build_bat, {
+      "-mode=GenerateClangDatabase",
+      "-project=" .. ctx.uproject,
+      "-game",
+      "-engine",
+      ctx.target,
+      "Win64",
+      "Development",
+    }),
+    ctx.dir,
+    "Unreal compile database",
+    { warnings = false },
+    function(ok, _, out)
+      if not ok then
+        vim.notify("GenerateClangDatabase failed, see :copen or run it in a terminal", vim.log.levels.ERROR)
+        return
+      end
 
-    -- UBT does not consistently write the database next to the .uproject, so
-    -- find where it landed and mirror it to the project root, which is where
-    -- clangd roots (see root_markers in lua/plugins/cpp.lua).
-    local wanted = vim.fs.joinpath(ctx.dir, "compile_commands.json")
-    if not vim.uv.fs_stat(wanted) then
-      local produced = out:match("([%a]:[^\r\n]-compile_commands%.json)")
+      -- UBT writes the database to the ENGINE root, not next to the .uproject,
+      -- and reports the location on a "ClangDatabase written to <path>" line.
+      -- That location is shared by every project on this machine, so mirror it
+      -- into the project, which is where clangd roots (see lua/plugins/cpp.lua).
+      local wanted = vim.fs.joinpath(ctx.dir, "compile_commands.json")
+      local produced = out:match("written to ([%a]:[^\r\n]-compile_commands%.json)")
         or vim.fs.joinpath(ctx.engine, "compile_commands.json")
-      if vim.uv.fs_stat(produced) then
+
+      if produced ~= wanted and vim.uv.fs_stat(produced) then
         local src = io.open(produced, "rb")
         local dst = src and io.open(wanted, "wb")
         if src and dst then
           dst:write(src:read("*a"))
           src:close()
           dst:close()
+        elseif src then
+          src:close()
         end
       end
-    end
 
-    if vim.uv.fs_stat(wanted) then
-      vim.notify("compile_commands.json ready, restarting clangd", vim.log.levels.INFO)
-      vim.cmd("LspRestart clangd")
-    else
-      vim.notify("UBT reported success but no compile_commands.json was found", vim.log.levels.ERROR)
+      if vim.uv.fs_stat(wanted) then
+        vim.notify("compile_commands.json ready, restarting clangd", vim.log.levels.INFO)
+        -- :LspRestart is not always defined (it comes and goes between
+        -- nvim-lspconfig versions), so fall back to stopping the client and
+        -- reloading the buffer, which reattaches it against the new database.
+        if not pcall(vim.cmd, "LspRestart clangd") then
+          for _, client in ipairs(vim.lsp.get_clients({ name = "clangd" })) do
+            client:stop(true)
+          end
+          vim.defer_fn(function()
+            vim.cmd("silent! edit")
+          end, 300)
+        end
+      else
+        vim.notify("UBT reported success but no compile_commands.json was found", vim.log.levels.ERROR)
+      end
     end
-  end)
+  )
 end
 
 return M
