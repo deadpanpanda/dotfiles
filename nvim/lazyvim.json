@@ -2,6 +2,7 @@
   "extras": [
     "lazyvim.plugins.extras.dap.core",
     "lazyvim.plugins.extras.editor.neo-tree",
+    "lazyvim.plugins.extras.lang.clangd",
     "lazyvim.plugins.extras.lang.sql",
     "lazyvim.plugins.extras.lang.typescript"
   ],

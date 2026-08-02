@@ -1,3 +1,7 @@
+-- Vault paths differ between the WSL and Windows installs that share this
+-- config, so they are built from util.platform rather than hardcoded.
+local platform = require("util.platform")
+
 return {
   "obsidian-nvim/obsidian.nvim",
   version = "*",
@@ -23,11 +27,11 @@ return {
     workspaces = {
       {
         name = "personal",
-        path = "/mnt/c/repos/obsidian",
+        path = platform.repos("obsidian"),
       },
       {
         name = "work",
-        path = "/mnt/c/repos/hq",
+        path = platform.repos("hq"),
       },
     },
 
