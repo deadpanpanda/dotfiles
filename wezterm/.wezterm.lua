@@ -38,8 +38,11 @@ local windows = { DomainName = "local" }
 local win_nvim = "C:/Program Files/Neovim/bin/nvim.exe"
 local unreal_projects = "C:/Users/adamr/Documents/Unreal Projects"
 
-local function windows_tab(args, cwd)
-	return wezterm.action.SpawnCommandInNewTab({
+-- New WINDOW rather than new tab: a Windows tab buried in the WSL window
+-- cannot be arranged alongside the Unreal editor, which is the whole point of
+-- having it. Tabs keep you inside one window; windows can be tiled.
+local function windows_window(args, cwd)
+	return wezterm.action.SpawnCommandInNewWindow({
 		domain = windows,
 		args = args,
 		cwd = cwd,
@@ -71,10 +74,11 @@ config.keys = {
 	{ key = "v", mods = "CTRL|SHIFT", action = wezterm.action.DisableDefaultAssignment },
 	{ key = "v", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
 
-	-- Windows tabs. CTRL|ALT + letter is unused by WezTerm's defaults, which
-	-- only bind CTRL|ALT for pane splits and resizing (punctuation and arrows).
-	{ key = "n", mods = "CTRL|ALT", action = windows_tab({ win_nvim }, unreal_projects) },
-	{ key = "p", mods = "CTRL|ALT", action = windows_tab({ "powershell.exe", "-NoLogo" }, unreal_projects) },
+	-- Windows-side windows. CTRL|ALT + letter is unused by WezTerm's defaults,
+	-- which only bind CTRL|ALT for pane splits and resizing (punctuation and
+	-- arrows).
+	{ key = "n", mods = "CTRL|ALT", action = windows_window({ win_nvim }, unreal_projects) },
+	{ key = "p", mods = "CTRL|ALT", action = windows_window({ "powershell.exe", "-NoLogo" }, unreal_projects) },
 	{
 		key = "l",
 		mods = "CTRL|ALT",
