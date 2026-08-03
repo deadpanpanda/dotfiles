@@ -1,13 +1,15 @@
 return {
   {
     "kristijanhusak/vim-dadbod-ui",
-    -- LazyVim's lang.sql extra binds <leader>D. Prefer <leader>db.
-    -- The extra's init already sets db_ui_use_nerd_fonts and
-    -- db_ui_show_database_icon, along with save locations and
-    -- db_ui_execute_on_save = false, so it is left untouched here.
-    keys = {
-      { "<leader>D", false },
-      { "<leader>db", "<cmd>DBUIToggle<CR>", desc = "Toggle DB UI" },
-    },
+    -- Deliberately left on LazyVim's default <leader>D.
+    --
+    -- This used to rebind the DB UI toggle to <leader>db, which collides with
+    -- nvim-dap's Toggle Breakpoint. The collision was silent: dadbod won, and
+    -- there was then no key bound to setting a breakpoint at all, which only
+    -- surfaced when debugging Unreal C++.
+    --
+    -- The lang.sql extra's init already sets db_ui_use_nerd_fonts,
+    -- db_ui_show_database_icon, the save locations and
+    -- db_ui_execute_on_save = false, so there is nothing to override here.
   },
 }
